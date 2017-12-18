@@ -1,0 +1,3 @@
+db.url=jdbc:oracle:thin:@SERVER_PC:1521:SOUT
+db.user=sout69
+db.password=masterkey

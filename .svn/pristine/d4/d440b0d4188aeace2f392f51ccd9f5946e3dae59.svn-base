@@ -1,0 +1,322 @@
+package ru.sout;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import ru.sout.pojo.*;
+
+import javax.transaction.Transactional;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+
+/**
+ * Created by Анатолий on 06.02.2015.
+ */
+public class ServiceSpravImpl implements ServiceSprav {
+    Logger logger = LogManager.getLogger(ServiceSpravImpl.class);
+
+    @Autowired
+    private SessionFactory sessionFactory;
+
+    public void setSessionFactory(SessionFactory sessionFactory){
+        this.sessionFactory = sessionFactory;
+    }
+
+    @Override
+    @Transactional
+    public List<SprFactors> getFactors() {
+        logger.info("getAllSprFactors");
+        return sessionFactory.getCurrentSession().createQuery("select b from " + SprFactors.class.getName() + " b" +" where b.idprnt = 0").setReadOnly(true).list();
+    }
+
+    @Override
+    @Transactional
+    public List<SprSubFactors> getSubFactors() {
+        logger.info("getAllSprSubFactors");
+        return sessionFactory.getCurrentSession().createQuery("select b from " + SprSubFactors.class.getName() + " b ").setReadOnly(true).list();
+    }
+
+    @Override
+    @Transactional
+    public List<SprTemplates> getSprTemplates(){
+        logger.info("getAllSprTemplates");
+        return sessionFactory.getCurrentSession().createQuery("select b from " + SprTemplates.class.getName() + " b ").setReadOnly(true).list();
+    }
+
+    @Override
+    @Transactional
+    public List<VStructureMobileEntity> getWorkPlace(String token) {
+        logger.info("getWorkPlaces");
+//        return sessionFactory.getCurrentSession().createQuery("select b from " + VStructureMobileEntity.class.getName() + " b where b.jobsCode= ?" ).setString(0,token).setReadOnly(true).list();
+
+//        String s  = (String) sessionFactory.getCurrentSession().createSQLQuery("select mkvProtocol.CalcWEClass(:params, null, 480) from dual")
+//                .setParameter("params", token)
+//                .uniqueResult();
+
+
+        return  sessionFactory.getCurrentSession().createSQLQuery("select * from table(gsg.GSG_GETWORKPLACES_MOBILE('" + token + "'))")
+                .addEntity(VStructureMobileEntity.class)
+                //.setParameter("params", token)
+                .list();
+
+    }
+
+    @Override
+    @Transactional
+    public List<FactorsValue> getValues(String token) {
+        logger.info("-----getValues -----");
+//        List<FactorsValue> ret = sessionFactory.getCurrentSession().createQuery("select b from " + VstructureFactorsValueEntity.class.getName() + " b where b.jobsCode= ?").setString(0, token).setReadOnly(true).list();
+
+        List<FactorsValue> ret = sessionFactory.getCurrentSession().createSQLQuery("select * from table(gsg.GSG_GETFACTORS_VALUE('" + token + "'))")
+                .addEntity(FactorsValue.class)
+                .list();
+
+        if (ret.size()>0){
+            logger.info("-----markValues -----");
+//            sessionFactory.getCurrentSession().createQuery("update Jobs b set b.idStatus = 16 where b.jobsCode = ? and b.idStatus = 15").setParameter(0, token).executeUpdate();
+            sessionFactory.getCurrentSession().createQuery("update "+Jobs.class.getName()+" b set b.idStatus = 16 where b.jobsCode = ? and b.idStatus = 15").setParameter(0, token).executeUpdate();
+        }
+        logger.info("-----Ok -----");
+        return ret; //sessionFactory.getCurrentSession().createQuery("select b from " + VstructureSubfactorsValueEntity.class.getName() + " b where b.jobsCode= ?").setString(0, token).setReadOnly(true).list();
+    }
+
+//    @Transactional
+//    private void markJobs(String token){
+//        sessionFactory.getCurrentSession().createQuery("update Jobs b set b.idStatus = 16 where b.jobsCode = ?").setString(0,token);
+//    }
+
+
+//    @Override
+//    public String setValues(List<FactorsValue> data) {
+//        String par = setValuesT1(data);
+//        String ret = setValuesT2(par);
+//        return ret;
+//    }
+
+
+    @Override
+    @Transactional
+    public String setValues(List<FactorsValue> data) {
+        logger.info("------setValue------");
+        HashMap<BigDecimal,BigDecimal> m = new HashMap<BigDecimal,BigDecimal>();
+        String del = "";
+        String params = "";
+        for (FactorsValue item: data) {
+            if (!m.containsKey(item.getIdStructure())) {
+                params = params.concat(del).concat(item.getIdStructure().toString());
+                m.put(item.getIdStructure(),null);
+                del = ",";
+            }
+            sessionFactory.getCurrentSession().saveOrUpdate(item);
+        }
+        m.clear();
+
+//        sessionFactory.getCurrentSession().createStoredProcedureCall();
+
+
+//        String s  = (String) sessionFactory.getCurrentSession().createSQLQuery("select mkvProtocol.CalcWEClass_(:params, null, 480, 0) from dual")
+//                .setParameter("params", params)
+//                .uniqueResult();
+//        String dd = s+"/dd";
+        String s = "";
+        if (!params.trim().equals("")) {
+            s = (String) sessionFactory.getCurrentSession().createSQLQuery("select mkvProtocol.CalcWEClassZ(:params, null, 480) from dual")
+                    .setParameter("params", params)
+                    .uniqueResult();
+        }
+        if (s == null){ s="";}
+        if (s.equals("Ok")){ s="";}
+        if (!s.equals("")){
+            return s;
+        }
+
+
+
+
+//                .setParameter("params", params, OracleTypes.VARCHAR)
+//        .setParameter("params", params)
+//                .setParameter("idfactors", null)
+//                .setParameter("tm", 480)
+//                .setParameter("close", false)
+//                .executeUpdate();
+                        //uniqueResult();
+//        String s = res;
+//                .setParameter("entity_id", entityId.longValue())
+//                .setParameter("view_name", viewName)
+//                .setParameter("net_fltr_oracle", netFltrOracle)
+//                .setParameter("user_name", userName);
+//        query.get
+//        List viewData = query.list();
+//        org.hibernate.Session ses = sessionFactory.getCurrentSession();
+//        ses.createStoredProcedureCall()
+//        CallableStatement st = sessionFactory.getCurrentSession().connection();
+//        ??
+
+//        sessionFactory.getCurrentSession().createQuery("update " + SubfactorsValue.class.getName()
+//                        + " b set "
+//                where b.jobsCode= ?" ). setString(0,token).;
+//        sessionFactory.getCurrentSession().createQuery("select b from " + VstructureSubfactorsValueEntity.class.getName() + " b where b.jobsCode= ?" ).setString(0,token).setReadOnly(true).list();
+        return "";
+    }
+
+
+    //----------------------------------------------------
+    @Override
+    @Transactional
+    public String setValuesT1(List<FactorsValue> data, String token) {
+        logger.info("------setValue------");
+//        HashMap<BigDecimal,BigDecimal> m = new HashMap<BigDecimal,BigDecimal>();
+//        String del = "";        logger.info("------setValue------");
+        String params = "";
+        for (FactorsValue item: data) {
+//            if (!m.containsKey(item.getIdStructure())) {
+//                params = params.concat(del).concat(item.getIdStructure().toString());
+//                m.put(item.getIdStructure(),null);
+//                del = ",";
+//            }
+            item.setJob(token);
+
+
+//            String ss = ((item.getId() == null) ? "null"  :  item.getId().toString())+"/"+
+//                    ((item.getJob() == null) ? "null"     : item.getJob().toString())+"/"+
+//                    ((item.getClassUt() == null)? "null"  : item.getClassUt().toString())+"/"+
+//                    ((item.getDurProc() == null)? "null"  :item.getDurProc().toString())+"/"+
+//                    ((item.getValue2() == null)? "null"   :item.getValue2().toString())+"/"+
+//                    ((item.getIdFactors() == null)? "null": item.getIdFactors().toString())+"/"+
+//                    ((item.getClassUtSiz()== null)? "null":item.getClassUtSiz().toString())+"/"+
+//                    ((item.getNote()== null)? "null"      : item.getNote().toString())+"/"+
+//                    ((item.getIdStatus() == null)? "null" : item.getIdStatus().toString())+"/"+
+//                    ((item.getSname() == null) ? "null"   : item.getSname().toString())+"/"+
+//                    ((item.getIdStructure() == null)? "null":item.getIdStructure().toString());
+//            logger.info("++++"+ss);
+
+            sessionFactory.getCurrentSession().saveOrUpdate(item);
+            params = "Ok";
+        }
+//        m.clear();
+        logger.info("------setValue Ok------");
+        return params;
+    }
+
+    @Override
+    @Transactional
+    public String setValuesT2(String params) {
+        logger.info("------Recalc value------");
+        String s = "";
+        if (!params.trim().equals("")) {
+//            s = (String) sessionFactory.getCurrentSession().createSQLQuery("select mkvProtocol.CalcWEClassZ(:params, null, 480) from dual")
+            s = (String) sessionFactory.getCurrentSession().createSQLQuery("select mkvProtocol.CalcWEClassZ(null, null, 480) from dual")
+//                    .setParameter("params", params)
+                    .uniqueResult();
+        }
+        logger.info("------Recalc value ok------");
+        if (s == null){ s="";}
+        if (s.equals("Ok")){ s="";}
+        if (!s.equals("")){
+            return s;
+        }
+        return "";
+    }
+    //----------------------------------------------------
+
+
+
+
+
+
+
+
+//
+//    @Override
+//    @Transactional
+//    public String setRecalcs(List<FactorsValue> data) {
+//        logger.info("------setValue------");
+//        HashMap<BigDecimal,BigDecimal> m = new HashMap<BigDecimal,BigDecimal>();
+//        String del = "";
+//        String params = "";
+//        for (FactorsValue item: data) {
+//            if (!m.containsKey(item.getIdStructure())) {
+//                params = params.concat(del).concat(item.getIdStructure().toString());
+//                m.put(item.getIdStructure(),null);
+//                del = ",";
+//            }
+////            sessionFactory.getCurrentSession().saveOrUpdate(item);
+//        }
+//        m.clear();
+//        String s  = (String) sessionFactory.getCurrentSession().createSQLQuery("select mkvProtocol.CalcWEClass(:params, null, 480, 0) from dual")
+//                .setParameter("params", params)
+//                .uniqueResult();
+//        if (!s.equals("")){
+//            return s;
+//        }
+//        return "";
+//    }
+
+    @Override
+    @Transactional
+    public boolean setWorkplace(List<WorkPlace> data) {
+        logger.info("------setValue------");
+//        List<WT> list = sessionFactory.getCurrentSession().createSQLQuery("select STRUCTURE_FACTORS_SEQ.Nextval from dual;").setReadOnly(true).list();
+        for (WorkPlace item: data) {
+            sessionFactory.getCurrentSession().saveOrUpdate(item);
+        }
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public List<VtableFactor> getActsOnFactor(String token, String idWorkPlace, String idFactors){
+        logger.info("-----getacts -----");
+//        List<VtableFactor> ret = sessionFactory.getCurrentSession().createQuery("select b from " + VtableFactor.class.getName() + " b where b.jobsCode= ? and b.idWp= ? and b.idFactor= ?").setString(0, token).setString(1,idWorkPlace).setString(2,idWorkPlace).setReadOnly(true).list();
+        List<VtableFactor> ret = sessionFactory.getCurrentSession().createQuery("select b from " + VtableFactor.class.getName() + " b where b.idWp= :idWp and b.idFactors= :idFactors").setString("idWp", idWorkPlace).setString("idFactors",idFactors).setReadOnly(true).list();
+//        if (ret.size()>0){
+//            logger.info("-----markValues -----");
+//            sessionFactory.getCurrentSession().createQuery("update Jobs b set b.idStatus = 16 where b.jobsCode = ? and b.idStatus = 15").setParameter(0, token).executeUpdate();
+//        }
+        logger.info("-----Ok -----");
+        return ret; //sessionFactory.getCurrentSession().createQuery("select b from " + VstructureSubfactorsValueEntity.class.getName() + " b where b.jobsCode= ?").setString(0, token).setReadOnly(true).list();
+
+    }
+
+    @Override
+    @Transactional
+    public List<KartWorkplace> getKartOnWorkplace(String token, String idWorkPlace) {
+        logger.info("-----getacts -----");
+        List<KartWorkplace> ret = sessionFactory.getCurrentSession().createQuery("select b from " + KartWorkplace.class.getName() + " b where b.id= :idWp").setString("idWp", idWorkPlace).setReadOnly(true).list();
+        logger.info("-----Ok -----");
+        return ret; //sessionFactory.getCurrentSession().createQuery("select b from " + VstructureSubfactorsValueEntity.class.getName() + " b where b.jobsCode= ?").setString(0, token).setReadOnly(true).list();
+    }
+
+    @Override
+    @Transactional
+    public List<Structure2050> getKart2050(String token) {
+        logger.info("-----katrs2050 -----");
+        //ID_STRUCTURE,TOTAL_WP,WOMEN_WP,PRIOR18_WP,DISABLED_WP
+        List<Structure2050> ret = sessionFactory.getCurrentSession().createSQLQuery("select * from table(gsg.GSG_GETKARTS2050('" + token + "'))")
+                .addEntity(Structure2050.class)
+                .list();
+        logger.info("-----Ok -----");
+        return ret;
+    }
+
+    @Override
+    @Transactional
+    public boolean setKarts2050(List<Structure2050> data) {
+        logger.info("------setkarts2050------");
+        for (Structure2050 item: data) {
+            sessionFactory.getCurrentSession().saveOrUpdate(item);
+        }
+        return true;
+
+    }
+
+    @Override
+    @Transactional
+    public List<Ion> getIon() {
+        logger.info("-----ION -----");
+        return sessionFactory.getCurrentSession().createQuery("select b from " + Ion.class.getName() + " b").setReadOnly(true).list();
+    }
+
+}

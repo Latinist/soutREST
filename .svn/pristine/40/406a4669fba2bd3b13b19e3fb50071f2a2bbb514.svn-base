@@ -1,0 +1,332 @@
+package ru.sout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.sout.pojo.*;
+import spring.SpringApplicationContext;
+
+import javax.ws.rs.*;
+import java.util.List;
+
+/**
+ * Created by mzheludkov on 30.09.14.
+ */
+//-----------------------------------Factors------------------------------------------------------
+@Path("/sout")
+public class ServiceSout {
+
+    public static final Logger logger = LoggerFactory.getLogger(ServiceSout.class);
+
+    @GET
+    @Path("/factors")
+    @Produces(MimeType.JSON8)
+    public List<SprFactors> getFactors() {
+        return getDaoFactors();
+    }
+
+    private List<SprFactors> getDaoFactors(){
+        ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+        return sp.getFactors();
+    };
+    //--------------------------------------SubFuctors---------------------------------------------------
+    @GET
+    @Path("/subfactors")
+    @Produces(MimeType.JSON8)
+    public List<SprSubFactors> getSubFactors() {
+        return getDaoSubFactors();
+    }
+
+    private List<SprSubFactors> getDaoSubFactors(){
+        ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+        return sp.getSubFactors();
+    };
+    //--------------------------------------Template---------------------------------------------------
+    @GET
+    @Path("/template")
+    @Produces(MimeType.JSON8)
+    public List<SprTemplates> getTemplate() {
+        return getDaoSprTemplate();
+    }
+
+    private List<SprTemplates> getDaoSprTemplate(){
+        ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+        return sp.getSprTemplates();
+    };
+    //------------------------------------WorkPlace-----------------------------------------------------
+        @GET
+        @Path("/workplace/{id}")
+        @Produces(MimeType.JSON8)
+        public List<VStructureMobileEntity> getWorkPlace(@PathParam("id") String token){
+            return getDaoWorkPlace(token);
+        }
+
+        private List<VStructureMobileEntity> getDaoWorkPlace(String token){
+            ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+            return sp.getWorkPlace(token);
+        }
+    //---------------------------------------Values--------------------------------------------------
+        @GET
+        @Path("/values/{id}")
+        @Produces(MimeType.JSON8)
+        public List<FactorsValue> getValies(@PathParam("id") String token){
+            return getdaoValues(token);
+        }
+
+        private List<FactorsValue> getdaoValues(String token) {
+            ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+            sp.getValues(token);
+            return sp.getValues(token);
+        }
+//-----------------------------------------Measure------------------------------------------------
+    @POST
+    @Path("/measure/{id}")
+    @Consumes(MimeType.JSON)
+    @Produces(MimeType.TEXT)
+    public String updateMeasure(@PathParam("id") String token, List<FactorsValue> data) {
+        System.out.println("---------------------------------------");
+        System.out.println("Поступил массив SubfactorsValue длиной в ".concat(String.valueOf(data.size()).concat("записей")));
+        System.out.println("---------------------------------------");
+        try {
+            setDaoValues(data);
+            return "Ok";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Ошибка: "+e.getMessage().toString();
+        }
+    }
+
+    private void setDaoValues(List<FactorsValue> data) throws Exception {
+        ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+//        for (FactorsValue li : data){
+//
+//            if (li.getId().intValue() == 0){
+//                li.setId(null);
+//            }
+//        }
+
+        try {
+            //String res = sp.setValues(data);
+            String par = sp.setValuesT1(data);
+            String res = sp.setValuesT2(par);
+
+
+
+            if (!res.equals("")){
+                logger.info("Ошибка расчета рабочего места");
+                throw new Exception("Ошибка расчета рабочего места:"+res);
+            };
+        } catch(Exception e){
+            logger.info("setvalues"+e.getMessage().toString());
+            throw new Exception("Ошибка записи:"+e.getMessage().toString());
+        }
+    }
+//-----------------------------------------------------------------------------------------
+    @POST
+    @Path("/workzone/{id}")
+    @Consumes(MimeType.JSON)
+    @Produces(MimeType.TEXT)
+    public String updateWorkplace(@PathParam("id") String token, List<WorkPlace> data) {
+        System.out.println("---------------------------------------");
+        System.out.println("Поступил массив Workplace длиной в ".concat(String.valueOf(data.size()).concat("записей")));
+        System.out.println("---------------------------------------");
+        try {
+            setDaoWorkplace(data);
+            return "Ok";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Ошибка: "+e.getMessage().toString();
+        }
+    }
+
+    private void setDaoWorkplace(List<WorkPlace> data) {
+        ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+//        for (WorkPlace li : data){
+//            if (li.getId().intValue() == 0){
+//                li.setId(null);
+//            }
+//        }
+        sp.setWorkplace(data);
+    }
+//-----------------------------------------html------------------------------------------------
+@GET
+@Path("/acts/{idwp}/{idfactor}")
+@Produces(MimeType.JSON8)
+public List<VtableFactor> getActs(@PathParam("idwp") String idWP, @PathParam("idfactor") String idFactor){
+//    public List<VtableFactor> getActs(@PathParam("id") String token, @QueryParam("idwp") String idWP, @QueryParam("idfactor") String idFactor){
+    return getDaoActsOnFactor(null, idWP, idFactor);
+}
+
+    private List<VtableFactor> getDaoActsOnFactor(String token, String idWP, String idFactor){
+        ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+        return sp.getActsOnFactor(token, idWP, idFactor);
+    }
+
+//-----------------------------------------html------------------------------------------------
+@GET
+@Path("/kart/{idwp}")
+@Produces(MimeType.JSON8)
+public List<KartWorkplace> getActs(@PathParam("idwp") String idWP){
+//    public List<VtableFactor> getActs(@PathParam("id") String token, @QueryParam("idwp") String idWP, @QueryParam("idfactor") String idFactor){
+    return getDaokartOnWorkplace(null, idWP);
+}
+
+    private List<KartWorkplace> getDaokartOnWorkplace(String token, String idWP){
+        ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+        return sp.getKartOnWorkplace(token, idWP);
+    }
+//-----------------------------------------------------------------------------------------
+@GET
+@Path("/kart2050/{id}")
+@Produces(MimeType.JSON8)
+public List<Structure2050> getkart2050(@PathParam("id") String id){
+    return getDaoKart2050(id);
+}
+
+    private List<Structure2050> getDaoKart2050(String token){
+        ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+        return sp.getKart2050(token);
+    }
+//-----------------------------------------html------------------------------------------------
+@POST
+@Path("/karts2050/{id}")
+@Consumes(MimeType.JSON)
+@Produces(MimeType.TEXT)
+public String updateKart2050(@PathParam("id") String token, List<Structure2050> data) {
+    System.out.println("---------------------------------------");
+    System.out.println("Поступил массив Structure2050 длиной в ".concat(String.valueOf(data.size()).concat("записей")));
+    System.out.println("---------------------------------------");
+    try {
+        setDaoKarts2050(data);
+        return "Ok";
+    } catch (Exception e) {
+        e.printStackTrace();
+        return "Ошибка: "+e.getMessage().toString();
+    }
+}
+
+    private void setDaoKarts2050(List<Structure2050> data) {
+        ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+        sp.setKarts2050(data);
+    }
+//-----------------------------------------Справочник радионуклидов------------------------------------------------
+@GET
+@Path("/ion/")
+@Produces(MimeType.JSON8)
+public List<Ion> getIon(){
+    return getDaoIon();
+}
+
+    private List<Ion> getDaoIon(){
+        ServiceSprav sp =  ((ServiceSprav) SpringApplicationContext.getBean("serviceSprav"));
+        return sp.getIon();
+    }
+
+
+
+//    @GET
+//    @Path("/test/{id}")
+//    @Produces(MimeType.JSON)
+//    public TestResult test(@PathParam("id") String id) {
+//        logger.info("test!!");
+//        return new TestResult(id, "ok");
+//
+//    }
+
+//    в общем для постраничного доступа можно использвать запросы такого вида
+//    http://localhost:9094/sbt-services/services/rest/rateAdminService/archivePagedList?trBankCode=038&fromDate=14.10.2013%2000:00:00&toDate=15.10.2015%2000:00:00&start=0&size=10
+//            [12:18:01] Михаил Желудков: start - номер записи с которой берем окно
+//    size - размер окна
+
+//    вот например код который возвращает список map (это универсальный метд для справочников, поэтому он возвращает map куда можно запихнуть что угодно)
+//    @GET
+//    @Path("/{dictionaryName}")
+//    @Produces(MimeType.JSON8)
+//    public List<Map> getDictionaryItems(@PathParam("dictionaryName") String dictionaryName) throws Exception {
+//        logger.info("get dictionary " + dictionaryName);
+//        return dictionaryDaoService.getDictionaryItems(dictionaryName);
+//    }
+
+//    вот так это выглядит
+//    http://localhost:9094/sbt-services/services/rest/dictionary/DICT_RATE_TREASURE
+//
+//    результат
+//    [{"NAME_CUR":"Золото","ISO_DIG":"A98","SCALE":1,"ISO_CUR":"Gold","TYPE":"METAL"},{"NAME_CUR":"Евро","ISO_DIG":"978","NAME_CUR_EN":"Euro","SCALE":1,"ISO_CUR":"EUR","TYPE":"CURRENCY"},{"NAME_CUR":"Доллар США","ISO_DIG":"840","NAME_CUR_EN":"US Dollar","SCALE":1,"ISO_CUR":"USD","TYPE":"CURRENCY"},{"NAME_CUR":"Серебро","ISO_DIG":"A99","NAME_CUR_EN":"Silver","SCALE":1,"ISO_CUR":"Silver","TYPE":"METAL"},{"NAME_CUR":"Австралийский доллар","ISO_DIG":"036","NAME_CUR_EN":"Australian Dollar","SCALE":1,"ISO_CUR":"AUD","TYPE":"CURRENCY"},{"NAME_CUR":"Белорусский рубль","ISO_DIG":"974","NAME_CUR_EN":"Belarussian Ruble","SCALE":10000,"ISO_CUR":"BYR","TYPE":"CURRENCY"},{"NAME_CUR":"Фунт стерлингов Соединенного Королевства","ISO_DIG":"826","NAME_CUR_EN":"Pound Sterling","SCALE":1,"ISO_CUR":"GBP","TYPE":"CURRENCY"},{"NAME_CUR":"Датская крона","ISO_DIG":"208","NAME_CUR_EN":"Danish Krone","SCALE":10,"ISO_CUR":"DKK","TYPE":"CURRENCY"},{"NAME_CUR":"Канадский доллар","ISO_DIG":"124","NAME_CUR_EN":"Canadian Dollar","SCALE":1,"ISO_CUR":"CAD","TYPE":"CURRENCY"},{"NAME_CUR":"Норвежская крона","ISO_DIG":"578","NAME_CUR_EN":"Norwegian Krone","SCALE":10,"ISO_CUR":"NOK","TYPE":"CURRENCY"},{"NAME_CUR":"Сингапурский доллар","ISO_DIG":"702","NAME_CUR_EN":"Singapore Dollar","SCALE":1,"ISO_CUR":"SGD","TYPE":"CURRENCY"},{"NAME_CUR":"Шведская крона","ISO_DIG":"752","NAME_CUR_EN":"Swedish Krona","SCALE":10,"ISO_CUR":"SEK","TYPE":"CURRENCY"},{"NAME_CUR":"Швейцарский франк","ISO_DIG":"756","NAME_CUR_EN":"Swiss Franc","SCALE":1,"ISO_CUR":"CHF","TYPE":"CURRENCY"},{"NAME_CUR":"Японская иена","ISO_DIG":"392","NAME_CUR_EN":"Yen","SCALE":100,"ISO_CUR":"JPY","TYPE":"CURRENCY"},{"NAME_CUR":"Казахский тенге","ISO_DIG":"398","NAME_CUR_EN":"Tenge","SCALE":100,"ISO_CUR":"KZT","TYPE":"CURRENCY"},{"NAME_CUR":"Польский злотый","ISO_DIG":"985","NAME_CUR_EN":"Zloty","SCALE":10,"ISO_CUR":"PLN","TYPE":"CURRENCY"},{"NAME_CUR":"Украинская гривна","ISO_DIG":"980","NAME_CUR_EN":"Hryvnia","SCALE":10,"ISO_CUR":"UAH","TYPE":"CURRENCY"},{"NAME_CUR":"Литовский лит","ISO_DIG":"440","NAME_CUR_EN":"Lithuanian Litas","SCALE":1,"ISO_CUR":"LTL","TYPE":"CURRENCY"},{"NAME_CUR":"Латвийский лат","ISO_DIG":"428","NAME_CUR_EN":"Latvian Lats","SCALE":1,"ISO_CUR":"LVL","TYPE":"CURRENCY"},{"NAME_CUR":"Эстонская крона","ISO_DIG":"233","NAME_CUR_EN":"Estonian kroon","SCALE":10,"ISO_CUR":"EEK","TYPE":"CURRENCY"},{"NAME_CUR":"Китайский юань Жэньминьби","ISO_DIG":"156","NAME_CUR_EN":"Yuan Renminbi","SCALE":10,"ISO_CUR":"CNY","TYPE":"CURRENCY"},{"NAME_CUR":"Чешская крона","ISO_DIG":"203","NAME_CUR_EN":"Czech Koruna","SCALE":10,"ISO_CUR":"CZK","TYPE":"CURRENCY"},{"NAME_CUR":"Платина","ISO_DIG":"A76","NAME_CUR_EN":"Platinum","SCALE":1,"ISO_CUR":"platinum","TYPE":"METAL"},{"NAME_CUR":"Палладий","ISO_DIG":"A33","NAME_CUR_EN":"Palladium","SCALE":1,"ISO_CUR":"palladium","TYPE":"METAL"},{"NAME_CUR":"Турецкая лира","ISO_DIG":"949","NAME_CUR_EN":"Turkish Lira","SCALE":1,"ISO_CUR":"TRY","TYPE":"CURRENCY"}]
+//            [12:21:38] Михаил Желудков: но это в случае когда справочник небольшой
+
+//    с мапом работай если нужно динамические справочники
+//    [12:25:02] Михаил Желудков: если их количество фиксировано и поля жесткие то лучше работать с объектами
+//    [12:25:31] Михаил Желудков: вот например наш сервис для работы с курсами валют
+//    @GET
+//    @Path("/treasureRate")
+//    @Produces(MimeType.JSON8)
+//    public List<RateValuePublic> getTreasureRate(@QueryParam("rateIndexId") String rateIndexId,
+//                                                 @QueryParam("fromDate") String fromDate,
+//                                                 @QueryParam("toDate") String toDate) {
+//        return rateDaoService.getTreasureRate(rateIndexId, SimpleTypesUtil.parseDateTime(fromDate), SimpleTypesUtil.parseDateTime(toDate));
+//    }
+
+//    http://localhost:9094/sbt-services/services/rest/rateService/treasureRate?rateIndexId=A33-1-35-1-0-0&fromDate=14.10.2013%2000:00:00&toDate=16.10.2013%2000:00:00
+//
+//    результат
+//    [{"buyValue":690,"sellValue":790,"activeFrom":1381694400000,"activeTo":1381780800000},{"buyValue":695,"sellValue":790,"activeFrom":1381780800000,"activeTo":1381867200000}]
+
+//    вот например наш объект дя опросов
+//    {
+//        "id": "2623939c-6559-4958-80ea-3b90cbcebd7d",
+//            "code": "testCode",
+//            "title": "Тестовый опрос",
+//            "startDate": 1420002000000,
+//            "finishDate": 1422680400000,
+//            "lang": "ru",
+//            "questionsJson": [
+//        {
+//            "id": "2c887f91-bede-41c8-91e7-c991a25dabf8",
+//                "question": "Сколько дней в январе ?",
+//                "type": "radioButton",
+//                "answers": [
+//            {
+//                "id": "630be748-68e0-4e8a-9c4d-ddfdfa59b227",
+//                    "text": "11"
+//            },
+//            {
+//                "id": "06c64a15-c75a-482c-a034-9359aa97d625",
+//                    "text": "12"
+//            }
+//            ]
+//        },
+//        {
+//            "id": "82e37ef1-3de3-4d12-9e5e-846a93dbc3ae",
+//                "question": "Сколько месяцев в году ?",
+//                "type": "checkBox",
+//                "answers": [
+//            {
+//                "id": "3db3536a-e485-4b7c-8219-2dd223811ea5",
+//                    "text": "30"
+//            },
+//            {
+//                "id": "26512afd-0562-4e40-b142-6df1677a6b12",
+//                    "text": "31"
+//            }
+//            ]
+//        }
+//        ],
+//        "changed": 1422269956000,
+//            "changedBy": "user"
+//    }
+
+//    каждый запрос ничего не знает про другие запросы
+//    [12:36:23] Михаил Желудков: лучше всего скачивать все за раз
+//    [12:37:13] Михаил Желудков: если сильно много записей то надо постраничный доступ использовать - в каждом запросе скачивать окно записей
+//    [12:38:08] Михаил Желудков: вот например как мы работаем с постраничным доступом
+//    [12:38:10 | Изменены 12:38:25] Михаил Желудков: http://localhost:9094/sbt-services/services/rest/rateAdminService/treasureRate?rateIndexId=A33-1-35-1-0-0&fromDate=14.10.2013%2000:00:00&toDate=15.10.2014%2000:00:00&start=20&size=5
+
+//    А если нет больше ничего
+//    [12:41:48] Михаил Желудков: прилетит пустой массив
+//
+//    http://localhost:9094/sbt-services/services/rest/rateAdminService/treasureRate?rateIndexId=A33-1-35-1-0-0&fromDate=14.10.2013%2000:00:00&toDate=15.10.2014%2000:00:00&start=500&size=5
+//    {"data":[],"total":372,"start":500,"size":5}
+//    [12:42:02] gsg2106 gsg: Пустой JSON?
+//            [12:42:12] Михаил Желудков: ну да []
+
+
+}
